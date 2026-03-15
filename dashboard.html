@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bar Dashboard · 老板看板</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #06060e;
+  --surface: #0c0c18;
+  --card: #10101e;
+  --card2: #161628;
+  --border: #1e1e35;
+  --border2: #2a2a48;
+  --gold: #c8a84a;
+  --gold2: #eacb72;
+  --gold3: rgba(200,168,74,0.12);
+  --red: #e05050;
+  --red2: rgba(224,80,80,0.12);
+  --green: #38b87a;
+  --green2: rgba(56,184,122,0.12);
+  --blue: #4a8de8;
+  --blue2: rgba(74,141,232,0.12);
+  --purple: #8b5cf6;
+  --text: #ddd8cc;
+  --text2: #8888aa;
+  --muted: #44445a;
+  --r: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', 'Noto Sans SC', monospace;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── BACKGROUND ── */
+.bg-glow {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 600px 300px at 20% 10%, rgba(200,168,74,0.05) 0%, transparent 100%),
+    radial-gradient(ellipse 400px 400px at 80% 80%, rgba(74,141,232,0.04) 0%, transparent 100%);
+}
+
+/* ── TOP NAV ── */
+.topnav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(6,6,14,0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px;
+}
+.nav-brand { display: flex; align-items: center; gap: 10px; }
+.nav-icon { font-size: 20px; }
+.nav-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: var(--gold2); letter-spacing: 0.5px; }
+.nav-title span { display: block; font-size: 9px; color: var(--muted); font-weight: 400; letter-spacing: 2px; text-transform: uppercase; font-family: 'DM Mono', monospace; }
+.nav-actions { display: flex; align-items: center; gap: 10px; }
+.nav-status { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+.btn-refresh {
+  background: var(--card2); border: 1px solid var(--border2); border-radius: 8px;
+  color: var(--text2); font-family: 'DM Mono', monospace; font-size: 12px;
+  padding: 7px 14px; cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; gap: 6px;
+}
+.btn-refresh:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── LAYOUT ── */
+.main { max-width: 1200px; margin: 0 auto; padding: 28px 20px 80px; position: relative; z-index: 1; }
+
+/* ── FILTER BAR ── */
+.filter-bar {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.filter-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.filter-chip {
+  padding: 6px 14px; border-radius: 20px; font-size: 11px; font-family: 'DM Mono', monospace;
+  border: 1px solid var(--border2); background: transparent; color: var(--text2);
+  cursor: pointer; transition: all 0.18s; white-space: nowrap;
+}
+.filter-chip:hover { border-color: var(--gold); color: var(--gold); }
+.filter-chip.active { background: var(--gold3); border-color: var(--gold); color: var(--gold2); }
+.filter-sep { width: 1px; height: 20px; background: var(--border); }
+input[type="date"].filter-date {
+  background: var(--surface); border: 1px solid var(--border2); border-radius: 8px;
+  color: var(--text2); font-family: 'DM Mono', monospace; font-size: 11px;
+  padding: 6px 10px; outline: none; color-scheme: dark; transition: all 0.2s;
+}
+input[type="date"].filter-date:focus { border-color: var(--gold); color: var(--text); }
+.filter-spacer { flex: 1; }
+.filter-status { font-size: 11px; color: var(--muted); }
+
+/* ── KPI GRID ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+@media (max-width: 700px) { .kpi-grid { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 480px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+
+.kpi-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 18px 20px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.2s;
+}
+.kpi-card:hover { border-color: var(--border2); }
+.kpi-card::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent, var(--gold)), transparent);
+  opacity: 0.4;
+}
+.kpi-card.gold { --accent: var(--gold); }
+.kpi-card.green { --accent: var(--green); }
+.kpi-card.red { --accent: var(--red); }
+.kpi-card.blue { --accent: var(--blue); }
+.kpi-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.kpi-label span { display: block; color: var(--text2); font-size: 9px; letter-spacing: 0.5px; text-transform: none; margin-top: 1px; }
+.kpi-value { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 6px; }
+.kpi-sub { font-size: 10px; color: var(--muted); }
+.kpi-sub .up { color: var(--green); }
+.kpi-sub .dn { color: var(--red); }
+
+/* ── TWO-COL ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+@media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ── CARD ── */
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.panel-head {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.panel-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.panel-title .cn { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); font-weight: 400; }
+.panel-body { padding: 16px 20px; }
+
+/* ── CHART ── */
+.bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 120px; padding-bottom: 24px; position: relative; }
+.bar-chart-wrap { overflow-x: auto; padding: 0; }
+.bar-col { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 28px; cursor: pointer; }
+.bar-col:hover .bar-fill { filter: brightness(1.3); }
+.bar-fill { width: 100%; border-radius: 4px 4px 0 0; transition: all 0.3s ease; position: relative; }
+.bar-fill.sales { background: linear-gradient(180deg, var(--gold2), var(--gold)); }
+.bar-fill.purchase { background: linear-gradient(180deg, #6060a0, #3a3a70); }
+.bar-date { font-size: 8px; color: var(--muted); margin-top: 4px; white-space: nowrap; }
+
+/* ── LEGEND ── */
+.legend { display: flex; gap: 16px; margin-bottom: 10px; }
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text2); }
+.leg-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+/* ── STATUS RING ── */
+.status-wrap { display: flex; align-items: center; justify-content: center; padding: 16px 0; }
+.donut-wrap { position: relative; width: 120px; height: 120px; }
+.donut-wrap svg { transform: rotate(-90deg); }
+.donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.donut-pct { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; color: var(--green); }
+.donut-label { font-size: 9px; color: var(--muted); letter-spacing: 1px; }
+.status-legend { margin-left: 24px; }
+.sl-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; color: var(--text2); }
+.sl-dot { width: 8px; height: 8px; border-radius: 50%; }
+.sl-val { margin-left: auto; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 600; color: var(--text); }
+
+/* ── TABLE ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead th {
+  padding: 10px 14px; text-align: left;
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+  border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; cursor: pointer; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: rgba(255,255,255,0.025); }
+tbody td { padding: 11px 14px; color: var(--text2); white-space: nowrap; }
+tbody td.date-col { color: var(--text); font-weight: 500; font-family: 'DM Mono', monospace; }
+tbody td.money { font-family: 'DM Mono', monospace; color: var(--text); }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: 500; }
+.badge.ok { background: var(--green2); color: var(--green); border: 1px solid rgba(56,184,122,0.2); }
+.badge.warn { background: var(--red2); color: var(--red); border: 1px solid rgba(224,80,80,0.2); }
+.ts-small { font-size: 10px; color: var(--muted); }
+
+/* ── DETAIL MODAL ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+  z-index: 200; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--card); border: 1px solid var(--border2);
+  border-radius: 16px; width: 100%; max-width: 560px;
+  max-height: 88vh; overflow-y: auto;
+  animation: modalIn 0.25s ease;
+}
+@keyframes modalIn { from { opacity:0; transform: scale(0.96) translateY(10px); } to { opacity:1; transform: scale(1) translateY(0); } }
+.modal-head {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: var(--card); z-index: 1;
+}
+.modal-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: var(--gold2); }
+.modal-close { background: none; border: none; color: var(--text2); font-size: 20px; cursor: pointer; padding: 4px; }
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 20px 24px; }
+.modal-section { margin-bottom: 20px; }
+.modal-section-title { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.modal-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.modal-row:last-child { border-bottom: none; }
+.modal-row .lbl { color: var(--text2); }
+.modal-row .lbl small { display: block; font-size: 10px; color: var(--muted); margin-top: 1px; }
+.modal-row .val { font-family: 'DM Mono', monospace; font-weight: 500; }
+.modal-row .val.pos { color: var(--green); }
+.modal-row .val.neg { color: var(--red); }
+.modal-row .val.gold { color: var(--gold2); }
+.modal-photo-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.modal-photo-grid img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; border:1px solid var(--border); cursor:pointer; transition:opacity 0.2s; }
+.modal-photo-grid img:hover { opacity:0.8; }
+.no-photo { font-size:11px; color:var(--muted); padding:8px 0; }
+
+/* ── EXPORT TOOLBAR ── */
+.export-bar {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.export-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.btn-export {
+  padding: 8px 16px; border-radius: 8px; font-family: 'DM Mono', monospace;
+  font-size: 11px; cursor: pointer; transition: all 0.18s;
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid var(--border2); background: transparent; color: var(--text2);
+}
+.btn-export:hover { border-color: var(--gold); color: var(--gold); background: var(--gold3); }
+.btn-export.primary { background: linear-gradient(135deg, #c8a84a, #9a7830); border-color: transparent; color: #06060e; font-weight: 600; }
+.btn-export.primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(200,168,74,0.3); }
+
+/* ── EMPTY ── */
+.empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
+.empty-state .ei { font-size: 36px; margin-bottom: 12px; }
+.empty-state p { font-size: 13px; line-height: 1.8; }
+
+/* ── LIGHTBOX ── */
+.lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:300; align-items:center; justify-content:center; }
+.lightbox.open { display:flex; }
+.lightbox img { max-width:90vw; max-height:90vh; border-radius:10px; object-fit:contain; }
+.lightbox-close { position:absolute; top:20px; right:24px; color:#fff; font-size:28px; cursor:pointer; opacity:0.7; }
+
+/* ── LOADING ── */
+.loading { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 32px; color: var(--muted); font-size: 12px; }
+.spin { width:16px; height:16px; border:2px solid var(--border2); border-top-color: var(--gold); border-radius:50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── TOAST ── */
+.toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(16px); background:var(--green); color:#fff; padding:10px 22px; border-radius:24px; font-size:12px; opacity:0; transition:all 0.3s; pointer-events:none; z-index:400; white-space:nowrap; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+
+/* ── UNLOCK CODE PANEL ── */
+.unlock-panel {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1.5px solid rgba(201,168,76,0.3);
+  border-radius: var(--r);
+  padding: 18px 22px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.unlock-left { flex: 1; min-width: 180px; }
+.unlock-label { font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 4px; }
+.unlock-desc { font-size: 11px; color: var(--text2); line-height: 1.6; }
+.unlock-code-wrap { text-align: center; }
+.unlock-code {
+  font-family: 'DM Mono', monospace;
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--gold2);
+  letter-spacing: 8px;
+  background: rgba(0,0,0,0.3);
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(201,168,76,0.2);
+  cursor: pointer;
+  user-select: all;
+  transition: all 0.15s;
+}
+.unlock-code:hover { background: rgba(201,168,76,0.1); }
+.unlock-code-hint { font-size: 10px; color: var(--muted); margin-top: 5px; }
+.unlock-date { font-size: 10px; color: var(--muted); margin-top: 8px; letter-spacing: 1px; }
+
+
+/* ── EDITED BADGE ── */
+.badge.edited {
+  background: rgba(201,168,76,0.12);
+  color: var(--gold2);
+  border: 1px solid rgba(201,168,76,0.25);
+}
+.edit-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+@media (max-width: 600px) {
+  .topnav { padding: 0 14px; }
+  .main { padding: 16px 12px 60px; }
+  .filter-bar { padding: 12px 14px; }
+  .export-bar { padding: 12px 14px; }
+  .panel-body { padding: 12px 14px; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-glow"></div>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="nav-brand">
+    <span class="nav-icon">🍸</span>
+    <div class="nav-title">
+      Bar Dashboard
+      <span>老板看板 · Owner View</span>
+    </div>
+  </div>
+  <div class="nav-actions">
+    <div class="nav-status"><div class="dot"></div><span id="lastSync">Loading...</span></div>
+    <a href="酒吧日报-v4-完整版.html" style="background:linear-gradient(135deg,#c8a84a,#9a7830);border:none;border-radius:8px;color:#06060e;font-family:'DM Mono',monospace;font-size:12px;padding:7px 14px;cursor:pointer;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:5px;">✍ 填写日报</a>
+    <button class="btn-refresh" onclick="loadData()">↻ 刷新</button>
+  </div>
+</nav>
+
+<div class="main">
+
+  <!-- UNLOCK CODE PANEL -->
+  <div class="unlock-panel">
+    <div class="unlock-left">
+      <div class="unlock-label">🔑 Today's Unlock Code · 今日动态解锁码</div>
+      <div class="unlock-desc">
+        经理提交后若需修改，将此码告知经理输入即可解锁。<br>
+        <strong style="color:var(--gold)">每天自动更新，今日有效</strong> — 请勿随意分享
+      </div>
+      <div class="unlock-date" id="unlockDateLabel"></div>
+    </div>
+    <div class="unlock-code-wrap">
+      <div class="unlock-code" id="dailyCode" onclick="copyCode()" title="点击复制">——————</div>
+      <div class="unlock-code-hint">点击复制 · Click to copy</div>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <span class="filter-label">Filter · 筛选</span>
+    <div class="filter-group">
+      <button class="filter-chip active" data-range="7" onclick="setRange(7,this)">7 Days · 近7天</button>
+      <button class="filter-chip" data-range="30" onclick="setRange(30,this)">30 Days · 近30天</button>
+      <button class="filter-chip" data-range="90" onclick="setRange(90,this)">90 Days · 近90天</button>
+      <button class="filter-chip" data-range="0" onclick="setRange(0,this)">All · 全部</button>
+    </div>
+    <div class="filter-sep"></div>
+    <div class="filter-group">
+      <input type="date" class="filter-date" id="filterFrom" onchange="applyCustomRange()">
+      <span style="font-size:11px;color:var(--muted);">→</span>
+      <input type="date" class="filter-date" id="filterTo" onchange="applyCustomRange()">
+    </div>
+    <div class="filter-sep"></div>
+    <div class="filter-group">
+      <button class="filter-chip" data-status="all" onclick="setStatus('all',this)" style="border-color:var(--gold);color:var(--gold);">All Status</button>
+      <button class="filter-chip" data-status="ok" onclick="setStatus('ok',this)">✅ OK</button>
+      <button class="filter-chip" data-status="warn" onclick="setStatus('warn',this)">⚠️ Issues</button>
+    </div>
+    <div class="filter-spacer"></div>
+    <span class="filter-status" id="filterStatus">—</span>
+  </div>
+
+  <!-- EXPORT BAR -->
+  <div class="export-bar">
+    <span class="export-label">Export · 导出</span>
+    <button class="btn-export primary" onclick="exportCSV()">⬇ CSV · 表格</button>
+    <button class="btn-export" onclick="exportJSON()">⬇ JSON</button>
+    <button class="btn-export" onclick="exportText()">⬇ Text Report · 文本报告</button>
+    <button class="btn-export" onclick="printView()">🖨 Print · 打印</button>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card gold"><div class="kpi-label">Total Sales<span>总销售额</span></div><div class="kpi-value" id="kpiSales">—</div><div class="kpi-sub" id="kpiSalesSub"></div></div>
+    <div class="kpi-card blue"><div class="kpi-label">Total Purchases<span>总采购额</span></div><div class="kpi-value" id="kpiPurchase">—</div><div class="kpi-sub" id="kpiPurchaseSub"></div></div>
+    <div class="kpi-card green"><div class="kpi-label">Avg Daily Sales<span>日均销售</span></div><div class="kpi-value" id="kpiAvg">—</div><div class="kpi-sub" id="kpiAvgSub"></div></div>
+    <div class="kpi-card red"><div class="kpi-label">Issue Rate<span>异常率</span></div><div class="kpi-value" id="kpiIssue">—</div><div class="kpi-sub" id="kpiIssueSub"></div></div>
+    <div class="kpi-card green"><div class="kpi-label">Est. Gross Profit<span>估算毛利润</span></div><div class="kpi-value" id="kpiProfit">—</div><div class="kpi-sub" id="kpiProfitSub"></div></div>
+    <div class="kpi-card gold"><div class="kpi-label">Best Sales Day<span>最佳销售日</span></div><div class="kpi-value" id="kpiBest">—</div><div class="kpi-sub" id="kpiBestSub"></div></div>
+  </div>
+
+  <!-- CHART + DONUT -->
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">📊 Sales Trend <span class="cn">· 销售走势</span></div>
+      </div>
+      <div class="panel-body">
+        <div class="legend">
+          <div class="leg-item"><div class="leg-dot" style="background:var(--gold)"></div>Sales · 销售</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#5050a0"></div>Purchase · 采购</div>
+        </div>
+        <div class="bar-chart-wrap"><div class="bar-chart" id="barChart"><div class="loading"><div class="spin"></div></div></div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">✅ Status Overview <span class="cn">· 状态总览</span></div>
+      </div>
+      <div class="panel-body">
+        <div class="status-wrap">
+          <div class="donut-wrap">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--border2)" stroke-width="14"/>
+              <circle id="donutArc" cx="60" cy="60" r="50" fill="none" stroke="var(--green)" stroke-width="14" stroke-dasharray="314" stroke-dashoffset="314" stroke-linecap="round" style="transition:stroke-dashoffset 1s ease;"/>
+            </svg>
+            <div class="donut-center">
+              <div class="donut-pct" id="donutPct">—</div>
+              <div class="donut-label">CLEAN</div>
+            </div>
+          </div>
+          <div class="status-legend">
+            <div class="sl-row"><div class="sl-dot" style="background:var(--green)"></div>OK · 正常<span class="sl-val" id="slOk">—</span></div>
+            <div class="sl-row"><div class="sl-dot" style="background:var(--red)"></div>Issues · 异常<span class="sl-val" id="slWarn">—</span></div>
+            <div class="sl-row"><div class="sl-dot" style="background:var(--muted)"></div>Total · 合计<span class="sl-val" id="slTotal">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="panel" style="margin-bottom:20px;">
+    <div class="panel-head">
+      <div class="panel-title">📋 Daily Records <span class="cn">· 每日记录</span></div>
+      <span style="font-size:11px;color:var(--muted);">Click row to preview · 点击查看详情</span>
+    </div>
+    <div class="table-wrap">
+      <table id="mainTable">
+        <thead>
+          <tr>
+            <th>Date · 日期</th>
+            <th>Sales · 销售</th>
+            <th>Purchase · 采购</th>
+            <th>Cash · 现金</th>
+            <th>Inventory · 库存</th>
+            <th>Total · 总值</th>
+            <th>Status · 状态</th>
+            <th>Confirmed · 确认</th>
+            <th>Submitted · 提交时间</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="9"><div class="loading"><div class="spin"></div>Loading data · 加载中...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle">—</div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <span class="lightbox-close">✕</span>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Supabase ──
+const SUPA_URL = 'https://ywugmtllsnildaqivhkv.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3dWdtdGxsc25pbGRhcWl2aGt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNzUyMDAsImV4cCI6MjA4ODc1MTIwMH0.3N6ECT6KlFYw5qzrGkT6JetqEWRr8VVZ3W23Z1USH0I';
+async function supaQuery(table, params) {
+  let url = SUPA_URL + '/rest/v1/' + table + '?' + (params || 'order=date.desc');
+  const r = await fetch(url, {
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Accept': 'application/json' }
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+let allData = [];
+let filteredData = [];
+let currentRange = 7;
+let currentStatus = 'all';
+
+// ── Daily Unlock Code ──
+const OWNER_PHONE = '263715174973'; // pre-filled for WA links
+const UNLOCK_SECRET = '987923'; // must match report page
+
+function generateDailyCode(dateStr) {
+  const str = UNLOCK_SECRET + dateStr;
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) + h) ^ str.charCodeAt(i);
+    h = h & 0x7fffffff;
+  }
+  return String(h % 1000000).padStart(6, '0');
+}
+
+function initUnlockCode() {
+  const today = new Date().toISOString().slice(0, 10);
+  const code = generateDailyCode(today);
+  document.getElementById('dailyCode').textContent = code;
+  document.getElementById('unlockDateLabel').textContent =
+    '📅 ' + new Date().toLocaleDateString('zh-CN', {year:'numeric',month:'long',day:'numeric'});
+}
+
+function copyCode() {
+  const code = document.getElementById('dailyCode').textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(code).then(() => showToast('✅ 解锁码已复制'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = code; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('✅ 解锁码已复制');
+  }
+}
+
+initUnlockCode();
+
+// ── Load ──
+async function loadData() {
+  document.getElementById('lastSync').textContent = 'Syncing · 同步中...';
+  try {
+    const data = await supaQuery('daily_reports', 'select=*&order=date.desc');
+    allData = data || [];
+    document.getElementById('lastSync').textContent = '更新 ' + new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+    applyFilters();
+  } catch(e) {
+    document.getElementById('lastSync').textContent = '加载失败';
+    showToast('⚠️ 加载失败: ' + e.message);
+  }
+}
+
+// ── Filters ──
+function setRange(days, el) {
+  currentRange = days;
+  document.querySelectorAll('.filter-chip[data-range]').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('filterFrom').value = '';
+  document.getElementById('filterTo').value = '';
+  applyFilters();
+}
+
+function setStatus(s, el) {
+  currentStatus = s;
+  document.querySelectorAll('.filter-chip[data-status]').forEach(c => {
+    c.style.borderColor = ''; c.style.color = '';
+  });
+  el.style.borderColor = 'var(--gold)'; el.style.color = 'var(--gold)';
+  applyFilters();
+}
+
+function applyCustomRange() {
+  const from = document.getElementById('filterFrom').value;
+  const to = document.getElementById('filterTo').value;
+  if (from || to) {
+    document.querySelectorAll('.filter-chip[data-range]').forEach(c => c.classList.remove('active'));
+    currentRange = -1;
+    applyFilters();
+  }
+}
+
+function applyFilters() {
+  let data = [...allData];
+
+  // Date range
+  const from = document.getElementById('filterFrom').value;
+  const to = document.getElementById('filterTo').value;
+  if (from || to) {
+    data = data.filter(r => {
+      if (from && r.date < from) return false;
+      if (to && r.date > to) return false;
+      return true;
+    });
+  } else if (currentRange > 0) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - currentRange);
+    const cutoffStr = cutoff.toISOString().slice(0,10);
+    data = data.filter(r => r.date >= cutoffStr);
+  }
+
+  // Status
+  if (currentStatus === 'ok') data = data.filter(r => r.all_ok);
+  if (currentStatus === 'warn') data = data.filter(r => !r.all_ok);
+
+  filteredData = data;
+  document.getElementById('filterStatus').textContent = data.length + ' records · 条记录';
+  renderKPI();
+  renderChart();
+  renderDonut();
+  renderTable();
+}
+
+// ── KPI ──
+function fmt(n) { return '$' + (Math.abs(n)||0).toFixed(2); }
+function fmtK(n) { return Math.abs(n) >= 1000 ? '$' + (n/1000).toFixed(1)+'K' : fmt(n); }
+
+function renderKPI() {
+  const d = filteredData;
+  const totalSales = d.reduce((s,r) => s + (r.sales||0), 0);
+  const totalPurchase = d.reduce((s,r) => s + (r.purchase||0), 0);
+  const avgSales = d.length ? totalSales / d.length : 0;
+  const warnCount = d.filter(r => !r.all_ok).length;
+  const issueRate = d.length ? (warnCount / d.length * 100) : 0;
+
+  document.getElementById('kpiSales').textContent = fmtK(totalSales);
+  document.getElementById('kpiSalesSub').innerHTML = `<span>${d.length} days · ${d.length}天</span>`;
+  document.getElementById('kpiPurchase').textContent = fmtK(totalPurchase);
+  const margin = totalSales ? ((totalSales - totalPurchase) / totalSales * 100) : 0;
+  document.getElementById('kpiPurchaseSub').innerHTML = `<span class="${margin>=0?'up':'dn'}">Margin ${margin.toFixed(1)}%</span>`;
+  document.getElementById('kpiAvg').textContent = fmtK(avgSales);
+  document.getElementById('kpiAvgSub').textContent = 'Per day · 每天';
+  document.getElementById('kpiIssue').textContent = issueRate.toFixed(0) + '%';
+  document.getElementById('kpiIssueSub').textContent = warnCount + ' days · 天 (threshold >3%)';
+
+  // Extra stats: gross profit est, best day
+  const grossProfit = totalSales * 0.60; // 60% gross margin estimate
+  const bestDay = d.reduce((best, r) => (!best || (r.sales||0) > (best.sales||0)) ? r : best, null);
+  document.getElementById('kpiProfit').textContent = fmtK(grossProfit);
+  document.getElementById('kpiProfitSub').innerHTML = `毛利率估算 60%`;
+  document.getElementById('kpiBest').textContent = bestDay ? fmtK(bestDay.sales||0) : '—';
+  document.getElementById('kpiBestSub').textContent = bestDay ? bestDay.date : '暂无数据';
+}
+
+// ── Chart ──
+function renderChart() {
+  const chart = document.getElementById('barChart');
+  const d = [...filteredData].reverse().slice(-30);
+  if (!d.length) { chart.innerHTML = '<div class="empty-state"><p>No data</p></div>'; return; }
+
+  const maxVal = Math.max(...d.map(r => Math.max(r.sales||0, r.purchase||0)), 1);
+  chart.innerHTML = d.map(r => {
+    const sh = Math.round(((r.sales||0) / maxVal) * 90);
+    const ph = Math.round(((r.purchase||0) / maxVal) * 90);
+    const dt = r.date ? r.date.slice(5) : '';
+    const warn = !r.all_ok ? 'style="opacity:0.6"' : '';
+    return `<div class="bar-col" onclick='showDetail(${JSON.stringify(r).replace(/'/g,"\'")})'  title="${r.date}\n销售: $${(r.sales||0).toFixed(2)}\n采购: $${(r.purchase||0).toFixed(2)}">
+      <div style="display:flex;gap:2px;align-items:flex-end;height:90px;" ${warn}>
+        <div class="bar-fill sales" style="height:${Math.max(sh,2)}px;width:10px;"></div>
+        <div class="bar-fill purchase" style="height:${Math.max(ph,2)}px;width:10px;"></div>
+      </div>
+      <div class="bar-date" style="${r.all_ok===false?'color:var(--red)':''}">${dt}${r.all_ok===false?' ⚠':''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Donut ──
+function renderDonut() {
+  const d = filteredData;
+  const okCount = d.filter(r => r.all_ok).length;
+  const total = d.length || 1;
+  const pct = Math.round(okCount / total * 100);
+  const circumference = 314;
+  const offset = circumference - (pct / 100) * circumference;
+  document.getElementById('donutArc').style.strokeDashoffset = offset;
+  document.getElementById('donutArc').style.stroke = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--gold)' : 'var(--red)';
+  document.getElementById('donutPct').textContent = pct + '%';
+  document.getElementById('donutPct').style.color = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--gold)' : 'var(--red)';
+  document.getElementById('slOk').textContent = okCount;
+  document.getElementById('slWarn').textContent = d.length - okCount;
+  document.getElementById('slTotal').textContent = d.length;
+}
+
+// ── Table ──
+function fmtDuration(ms) {
+  if (!ms) return '—';
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return s + 's';
+  return Math.floor(s/60) + 'min ' + (s%60) + 's';
+}
+
+function fmtDT(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('zh-CN',{month:'2-digit',day:'2-digit'}) + ' ' +
+           d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+  } catch { return '—'; }
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  if (!filteredData.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="ei">📭</div><p>No records found · 暂无记录<br><span style="font-size:11px">Try adjusting filters · 调整筛选条件</span></p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filteredData.map(r => {
+    const fd = r.full_data || {};
+    const submitTs = fd.submittedAt ? fmtDT(fd.submittedAt) : (fd.tsSubmit ? fmtDT(fd.tsSubmit) : (r.created_at ? fmtDT(r.created_at) : '—'));
+    const duration = '—'; // Not tracked in v6
+    const cash = fd.actualCash !== undefined ? fmt(fd.actualCash) : '—';
+    const inv = fd.actualInv !== undefined ? fmt(fd.actualInv) : '—';
+    const total = fd.reportedTotal !== undefined ? fmt(fd.reportedTotal) : '—';
+    const isEdited = fd.isEdited;
+    const statusBadge = r.all_ok
+      ? '<span class="badge ok">✅ OK</span>'
+      : '<span class="badge warn">⚠️ Issues</span>';
+    const editedBadge = isEdited ? ' <span class="badge edited"><span class="edit-dot"></span>已修改</span>' : '';
+    const status = statusBadge + editedBadge;
+
+    return `<tr onclick='showDetail(${JSON.stringify(r)})'>
+      <td class="date-col">${r.date || '—'}</td>
+      <td class="money">${fmt(r.sales||0)}</td>
+      <td class="money">${fmt(r.purchase||0)}</td>
+      <td class="money">${cash}</td>
+      <td class="money">${inv}</td>
+      <td class="money">${total}</td>
+      <td>${status}</td>
+      <td style="text-align:center">${fd.managerConfirmed ? '<span style="color:var(--green);font-size:13px">✅</span>' : '<span style="color:var(--muted)">—</span>'}</td>
+      <td><span class="ts-small">${submitTs}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Modal Detail ──
+function showDetail(r) {
+  if (typeof r === 'string') r = JSON.parse(r);
+  const fd = r.full_data || {};
+  document.getElementById('modalTitle').textContent = (r.date || '—') + ' · Daily Report 日报';
+
+  const fmtV = (n) => n !== undefined ? fmt(n) : '—';
+  const fmtSigned = (n) => n !== undefined ? ((n>=0?'+':'-') + '$' + Math.abs(n).toFixed(2)) : '—';
+  const pct = (n) => n !== undefined ? (n*100).toFixed(1)+'%' : '—';
+
+  let html = '';
+
+  // Timestamps
+  const submittedAt = fd.submittedAt || fd.tsSubmit || r.created_at;
+  html += `<div class="modal-section">
+    <div class="modal-section-title">⏱ Submission Info · 提交信息</div>
+    <div class="modal-row"><span class="lbl">Submitted · 提交时间</span><span class="val">${submittedAt ? fmtDT(submittedAt) : '—'}</span></div>
+    <div class="modal-row"><span class="lbl">Manager Confirmed · 经理确认</span><span class="val" style="color:${fd.managerConfirmed ? 'var(--green)' : 'var(--muted)'}">${fd.managerConfirmed ? '✅ Confirmed · 已确认' : '— Not recorded'}</span></div>
+    <div class="modal-row"><span class="lbl">Edited · 已修改</span><span class="val" style="color:${fd.isEdited ? 'var(--gold2)' : 'var(--muted)'}">${fd.isEdited ? '✏️ Yes · 是' : '— No · 否'}</span></div>
+  </div>`;
+
+  // Status
+  const alerts = fd.alerts || [];
+  html += `<div class="modal-section">
+    <div class="modal-section-title">📊 Summary · 核验摘要</div>
+    <div class="modal-row"><span class="lbl">Overall Status · 总体状态</span><span class="val">${r.all_ok ? '<span style="color:var(--green)">✅ All OK · 全部正常</span>' : '<span style="color:var(--red)">⚠️ Issues Found · 存在异常</span>'}</span></div>
+    <div class="modal-row"><span class="lbl">Sales Revenue · 销售额</span><span class="val gold">${fmtV(r.sales)}</span></div>
+    <div class="modal-row"><span class="lbl">Purchases · 采购额</span><span class="val">${fmtV(r.purchase)}</span></div>
+    <div class="modal-row"><span class="lbl">Cash in Hand · 实盘现金</span><span class="val">${fmtV(fd.actualCash)}</span></div>
+    <div class="modal-row"><span class="lbl">Inventory Value · 实盘库存</span><span class="val">${fmtV(fd.actualInv)}</span></div>
+    <div class="modal-row"><span class="lbl">Reported Total · 上报总值</span><span class="val">${fmtV(fd.reportedTotal)}</span></div>
+  </div>`;
+
+  // Cash check
+  html += `<div class="modal-section">
+    <div class="modal-section-title">💵 Cash Verification · 现金核验</div>
+    <div class="modal-row"><span class="lbl">Expected Cash · 理论现金</span><span class="val gold">${fmtV(fd.theoCash)}</span></div>
+    <div class="modal-row"><span class="lbl">Actual Cash · 实盘现金</span><span class="val">${fmtV(fd.actualCash)}</span></div>
+    <div class="modal-row"><span class="lbl">Difference · 差异</span><span class="val ${fd.cashOk?'pos':'neg'}">${fmtSigned(fd.actualCash - fd.theoCash)}</span></div>
+    <div class="modal-row"><span class="lbl">Variance Rate · 差异率</span><span class="val ${fd.cashOk?'pos':'neg'}">${pct(fd.cashDiffRate)}</span></div>
+  </div>`;
+
+  // Inventory check
+  html += `<div class="modal-section">
+    <div class="modal-section-title">📦 Inventory Verification · 库存核验</div>
+    <div class="modal-row"><span class="lbl">Expected Inventory · 理论库存</span><span class="val gold">${fmtV(fd.theoInv)}</span></div>
+    <div class="modal-row"><span class="lbl">Actual Inventory · 实盘库存</span><span class="val">${fmtV(fd.actualInv)}</span></div>
+    <div class="modal-row"><span class="lbl">Difference · 差异</span><span class="val ${fd.invOk?'pos':'neg'}">${fmtSigned(fd.actualInv - fd.theoInv)}</span></div>
+    <div class="modal-row"><span class="lbl">Variance Rate · 差异率</span><span class="val ${fd.invOk?'pos':'neg'}">${pct(fd.invDiffRate)}</span></div>
+  </div>`;
+
+  // Edit history
+  const editHistory = fd.editHistory || [];
+  if (fd.isEdited) {
+    html += `<div class="modal-section">
+      <div class="modal-section-title" style="color:var(--gold);">✏️ Edit History · 修改记录</div>`;
+    if (editHistory.length) {
+      editHistory.forEach((edit, i) => {
+        html += `<div class="modal-row"><span class="lbl">Edit Time · 修改时间</span><span class="val" style="color:var(--gold2)">${fmtDT(edit.editedAt)}</span></div>`;
+        html += `<div class="modal-row"><span class="lbl">Original Submit · 原始提交</span><span class="val">${edit.originalSubmittedAt ? fmtDT(edit.originalSubmittedAt) : '—'}</span></div>`;
+        html += `<div class="modal-row"><span class="lbl">Reason · 修改原因</span><span class="val" style="color:var(--gold2);font-weight:600">${edit.reason || '—'}</span></div>`;
+        if (edit.changes && edit.changes.length) {
+          html += `<div style="font-size:10px;color:var(--muted);margin:6px 0 4px;letter-spacing:1px">CHANGES · 改动明细</div>`;
+          edit.changes.forEach(ch => {
+            html += `<div class="modal-row">
+              <span class="lbl">${ch.field}</span>
+              <span class="val"><span style="color:var(--red);text-decoration:line-through">$${(ch.before||0).toFixed(2)}</span> → <span style="color:var(--green);font-weight:700">$${(ch.after||0).toFixed(2)}</span></span>
+            </div>`;
+          });
+        } else {
+          html += `<div class="modal-row"><span class="lbl">Changes · 改动</span><span class="val" style="color:var(--muted)">No numeric changes · 无数字变动</span></div>`;
+        }
+      });
+    } else {
+      html += `<div class="modal-row"><span class="lbl">Status · 状态</span><span class="val" style="color:var(--gold2)">Modified & re-submitted · 已解锁修改并重新提交</span></div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Alerts
+  if (alerts.length > 0) {
+    html += `<div class="modal-section">
+      <div class="modal-section-title" style="color:var(--red);">⚠️ Issues · 异常项目</div>
+      ${alerts.map(a => `<div class="modal-row"><span class="lbl" style="color:var(--red);">→ ${a}</span></div>`).join('')}
+    </div>`;
+  }
+
+  // Photos
+  const photos = r.photos || {};
+  const pp = photos.purchase || [];
+  const pi = photos.inventory || [];
+  if (pp.length || pi.length) {
+    html += `<div class="modal-section">
+      <div class="modal-section-title">📸 Photos · 照片</div>`;
+    if (pp.length) {
+      html += `<div style="font-size:10px;color:var(--muted);margin-bottom:6px;">🧾 Purchase Receipts · 采购收据</div>
+        <div class="modal-photo-grid">${pp.map(p=>`<img src="${p.data}" onclick="openLightbox('${p.data}')">`).join('')}</div>`;
+    }
+    if (pi.length) {
+      html += `<div style="font-size:10px;color:var(--muted);margin:10px 0 6px;">📦 Inventory Photos · 库存照片</div>
+        <div class="modal-photo-grid">${pi.map(p=>`<img src="${p.data}" onclick="openLightbox('${p.data}')">`).join('')}</div>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<div class="modal-section"><div class="modal-section-title">📸 Photos · 照片</div><div class="no-photo">No photos attached · 未上传照片</div></div>`;
+  }
+
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(e) { if (e.target === document.getElementById('modalOverlay')) closeModalDirect(); }
+function closeModalDirect() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+// ── Lightbox ──
+function openLightbox(src) { document.getElementById('lightboxImg').src = src; document.getElementById('lightbox').classList.add('open'); }
+function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+
+// ── Export ──
+function exportCSV() {
+  const headers = ['Date','Sales','Purchase','Cash','Inventory','Total','Status','Started','Submitted','Duration'];
+  const rows = filteredData.map(r => {
+    const fd = r.full_data || {};
+    return [
+      r.date||'',
+      r.sales||0,
+      r.purchase||0,
+      fd.actualCash||0,
+      fd.actualInv||0,
+      fd.reportedTotal||0,
+      r.all_ok ? 'OK' : 'Issues',
+      fd.tsStart ? new Date(fd.tsStart).toLocaleString('zh-CN') : '',
+      (fd.submittedAt||fd.tsSubmit) ? new Date(fd.submittedAt||fd.tsSubmit).toLocaleString('zh-CN') : (r.created_at ? new Date(r.created_at).toLocaleString('zh-CN') : ''),
+      fd.tsDuration ? fmtDuration(fd.tsDuration) : ''
+    ].map(v => `"${v}"`).join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  downloadFile('bar-report-' + new Date().toISOString().slice(0,10) + '.csv', csv, 'text/csv;charset=utf-8;');
+  showToast('✅ CSV exported · 已导出');
+}
+
+function exportJSON() {
+  downloadFile('bar-report-' + new Date().toISOString().slice(0,10) + '.json', JSON.stringify(filteredData, null, 2), 'application/json');
+  showToast('✅ JSON exported · 已导出');
+}
+
+function exportText() {
+  const lines = ['Bar Daily Reports Export · 酒吧日报导出', '=' .repeat(50), ''];
+  filteredData.forEach(r => {
+    const fd = r.full_data || {};
+    const alerts = fd.alerts || [];
+    lines.push(`Date · 日期: ${r.date}`);
+    lines.push(`Status · 状态: ${r.all_ok ? '✅ OK' : '⚠️ Issues'}`);
+    lines.push(`Sales · 销售: $${(r.sales||0).toFixed(2)}`);
+    lines.push(`Purchase · 采购: $${(r.purchase||0).toFixed(2)}`);
+    lines.push(`Cash · 现金: $${(fd.actualCash||0).toFixed(2)}`);
+    lines.push(`Inventory · 库存: $${(fd.actualInv||0).toFixed(2)}`);
+    const sa = fd.submittedAt || fd.tsSubmit || r.created_at;
+    if (sa) lines.push(`Submitted · 提交: ${new Date(sa).toLocaleString('zh-CN')}`);
+    if (fd.tsDuration) lines.push(`Duration · 用时: ${fmtDuration(fd.tsDuration)}`);
+    if (alerts.length) lines.push(`Issues · 异常: ${alerts.join('; ')}`);
+    lines.push('-'.repeat(40));
+  });
+  downloadFile('bar-report-' + new Date().toISOString().slice(0,10) + '.txt', lines.join('\n'), 'text/plain;charset=utf-8;');
+  showToast('✅ Text report exported · 已导出');
+}
+
+function printView() { window.print(); }
+
+function downloadFile(filename, content, type) {
+  const blob = new Blob(['\uFEFF' + content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+// ── Toast ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Init ──
+loadData();
+// Auto-refresh every 5 minutes
+setInterval(loadData, 300000);
+</script>
+</body>
+</html>

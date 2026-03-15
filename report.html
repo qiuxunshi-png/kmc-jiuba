@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🍸 Bar Daily Report · 酒吧日报</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap');
+:root{--bg:#07070f;--card:#0f0f1c;--border:#1e1e35;--gold:#c9a84c;--gold2:#f0d080;--red:#e05555;--green:#3db87a;--text:#e0dbd0;--text2:#8080a8;--muted:#44445a;--r:12px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;padding:0 0 80px}
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
+.topbar-icon{font-size:22px;cursor:pointer;user-select:none;-webkit-user-select:none}
+.topbar-title{font-size:15px;font-weight:700;color:var(--gold2)}
+.topbar-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.wrap{max-width:520px;margin:0 auto;padding:14px 16px}
+/* sections */
+.sec{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:10px}
+.sec-ttl{font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.sec-ttl span{color:var(--muted);font-weight:400;letter-spacing:.5px;text-transform:none;font-size:10px}
+/* rules */
+.rules{background:rgba(201,168,76,.04);border:1px solid rgba(201,168,76,.18);border-radius:var(--r);padding:16px 18px;margin-bottom:10px}
+.rules-ttl{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+.rule{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:11px;line-height:1.6}
+.rule:last-child{border-bottom:none}
+.rn{flex-shrink:0;width:18px;height:18px;background:rgba(201,168,76,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--gold);margin-top:2px}
+.rb{color:var(--text2)}.rb b{color:var(--text);display:block;margin-bottom:1px}.rb i{color:var(--muted);font-style:normal;font-size:10px;display:block}
+/* fields */
+.field{margin-bottom:12px}.field:last-child{margin-bottom:0}
+.flbl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text2);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.req{color:var(--red);font-size:13px}.hint{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ipw{position:relative}
+.pfx{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:14px;font-weight:600;pointer-events:none;font-family:'DM Mono',monospace}
+input[type=text],input[type=number],input[type=date]{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:12px 12px 12px 34px;color:var(--text);font-family:'DM Mono',monospace;font-size:15px;outline:none;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none;appearance:none}
+input[type=date]{padding-left:12px;color-scheme:dark}
+input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.1)}
+input.err,textarea.err{border-color:var(--red)!important;box-shadow:0 0 0 3px rgba(224,85,85,.1)!important}
+/* interval */
+.iwarn{display:none;background:rgba(224,85,85,.08);border:1px solid rgba(224,85,85,.3);border-radius:8px;padding:8px 12px;margin-top:6px;font-size:11px;color:#e08080;line-height:1.5}
+.iwarn.show{display:block}
+.iok{display:none;background:rgba(61,184,122,.07);border:1px solid rgba(61,184,122,.2);border-radius:8px;padding:8px 12px;margin-top:6px;font-size:11px;color:var(--green);line-height:1.5}
+.iok.show{display:block}
+.dchk{display:none;font-size:11px;color:var(--muted);margin-top:5px;align-items:center;gap:6px}
+.dchk.show{display:flex}
+.ms{width:10px;height:10px;border:1.5px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+/* photos */
+.psec{margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.plbl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.opt{background:rgba(68,68,90,.3);color:var(--muted);font-size:9px;padding:2px 6px;border-radius:5px;font-weight:400}
+.reqb{background:rgba(224,85,85,.15);color:var(--red);font-size:9px;padding:2px 6px;border-radius:5px;font-weight:600}
+.pbtn{display:block;width:100%;padding:13px;background:var(--bg);border:1.5px dashed var(--border);border-radius:9px;color:var(--text2);font-family:'Syne',sans-serif;font-size:12px;font-weight:600;text-align:center;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
+.pbtn:hover,.pbtn:active{border-color:var(--gold);color:var(--gold)}
+.pbtn.err{border-color:var(--red)!important}
+.pbtn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:16px}
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.pthumb{aspect-ratio:1;border-radius:7px;overflow:hidden;border:1px solid var(--border);position:relative;background:var(--bg)}
+.pthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.pdel{position:absolute;top:3px;right:3px;width:18px;height:18px;background:rgba(0,0,0,.75);border:none;border-radius:50%;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.pcnt{font-size:10px;color:var(--muted);margin-top:4px;text-align:right}
+/* confirm */
+.cfm{margin-top:12px;padding:14px;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:border-color .15s}
+.cfm:hover{border-color:var(--gold)}.cfm.err{border-color:var(--red)!important}
+.cb{width:20px;height:20px;border:2px solid var(--muted);border-radius:4px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s;background:var(--bg)}
+.cb.on{background:var(--gold);border-color:var(--gold)}.cb.on::after{content:'✓';color:#07070f;font-size:12px;font-weight:800}
+.cfmtxt{font-size:11px;color:var(--text2);line-height:1.6}.cfmtxt b{color:var(--text);display:block;margin-bottom:2px;font-size:12px}
+/* submit */
+#submitBtn{width:100%;padding:17px;background:linear-gradient(135deg,var(--gold) 0%,#9a7830 100%);border:none;border-radius:var(--r);color:#07070f;font-family:'Syne',sans-serif;font-size:15px;font-weight:800;cursor:pointer;transition:all .2s;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px}
+#submitBtn:active{transform:scale(.98)}#submitBtn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.bspin{width:18px;height:18px;border:2px solid rgba(0,0,0,.3);border-top-color:#000;border-radius:50%;animation:sp .7s linear infinite;display:none}
+/* lock */
+#lockBanner{display:none;background:rgba(224,85,85,.07);border:1.5px solid rgba(224,85,85,.3);border-radius:var(--r);padding:18px 20px;margin-bottom:10px}
+.ltop{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.lic{font-size:28px;flex-shrink:0}
+.ltitle{font-size:14px;font-weight:700;color:var(--red);margin-bottom:3px}
+.lsub{font-size:11px;color:var(--text2);line-height:1.6}
+.ldv{color:var(--gold2);font-weight:700}
+.ulrow{display:flex;gap:8px;margin-bottom:8px}
+.ulinput{flex:1;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:12px;color:var(--text);font-family:'DM Mono',monospace;font-size:20px;letter-spacing:6px;text-align:center;outline:none;transition:border-color .15s}
+.ulinput:focus{border-color:var(--gold)}
+.ulinput.shake{animation:shk .35s ease;border-color:var(--red)!important}
+@keyframes shk{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.btnul{padding:12px 16px;background:linear-gradient(135deg,var(--gold),#9a7830);border:none;border-radius:9px;color:#07070f;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.ulhint{font-size:10px;color:var(--muted);text-align:center;margin-bottom:10px}
+.rsnwrap{display:none;margin-top:4px}
+.rsnwrap.show{display:block}
+.rsnlbl{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text2);margin-bottom:6px}
+.rsnta{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-family:'Syne',sans-serif;font-size:12px;outline:none;resize:none;min-height:68px;transition:border-color .15s}
+.rsnta:focus{border-color:var(--gold)}
+.btncul{width:100%;margin-top:8px;padding:12px;background:linear-gradient(135deg,var(--gold),#9a7830);border:none;border-radius:9px;color:#07070f;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+/* edit banner */
+#editBanner{display:none;background:rgba(201,168,76,.07);border:1.5px solid rgba(201,168,76,.25);border-radius:var(--r);padding:11px 16px;margin-bottom:10px;align-items:center;gap:10px;font-size:12px;color:var(--gold2);font-weight:600}
+#editBanner.show{display:flex}
+/* error banner */
+#errBanner{display:none;background:rgba(224,85,85,.1);border:1px solid rgba(224,85,85,.35);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;font-size:12px;color:#e08080;line-height:1.7}
+#errBanner b{display:block;color:var(--red);font-size:13px;margin-bottom:4px}
+/* locked state */
+.form-locked input:not(.ulinput):not(.rsnta),
+.form-locked .pbtn,.form-locked .cfm{opacity:.3;pointer-events:none}
+.form-locked #submitBtn{opacity:.2;pointer-events:none}
+/* results */
+#results{display:none}
+.rh{text-align:center;padding:20px 0 14px}
+.rtitle{font-size:26px;font-weight:800;color:var(--gold2)}
+.rsub{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:4px}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.sbox{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.slbl{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px}
+.sval{font-size:20px;font-weight:800;color:var(--gold2);font-family:'DM Mono',monospace}
+.rcard{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:8px}
+.rcard.ok{border-color:rgba(61,184,122,.3)}.rcard.warn{border-color:rgba(224,85,85,.4);background:rgba(224,85,85,.04)}
+.rchead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.rctitle{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold)}
+.bdg{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px}
+.bdg.ok{background:rgba(61,184,122,.12);color:var(--green)}.bdg.warn{background:rgba(224,85,85,.12);color:var(--red)}
+.rrow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
+.rrow:last-child{border-bottom:none}
+.rl{color:var(--text2);font-size:11px}.rv{font-family:'DM Mono',monospace;font-weight:500}
+.rv.ok{color:var(--green)}.rv.warn{color:var(--red);font-weight:700}.rv.g{color:var(--gold2)}
+.okbox{background:rgba(61,184,122,.07);border:1px solid rgba(61,184,122,.25);border-radius:var(--r);padding:16px;text-align:center;color:var(--green);font-size:13px;font-weight:600;margin-bottom:8px;line-height:1.7}
+.issuebox{background:rgba(224,85,85,.06);border:1px solid rgba(224,85,85,.3);border-radius:var(--r);padding:14px 16px;margin-bottom:8px}
+.isstitle{color:var(--red);font-weight:700;font-size:12px;margin-bottom:8px}
+.issitem{color:#cc7777;font-size:11px;padding:2px 0 2px 12px;position:relative;line-height:1.5}
+.issitem::before{content:'→';position:absolute;left:0;color:var(--red)}
+.syncs{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:8px;font-size:11px;color:var(--text2);display:flex;align-items:center;gap:8px}
+.sharerow{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.bsh{width:100%;padding:13px;border-radius:var(--r);border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.bsh:active{opacity:.7}
+.bwa{background:rgba(37,211,102,.06);border-color:rgba(37,211,102,.3);color:#25d366}
+.breset{color:var(--muted)}
+.rpgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.rpgrid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:7px;border:1px solid var(--border)}
+/* toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a2e;border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:28px;font-size:12px;font-weight:600;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap;max-width:90vw}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.tok{background:rgba(61,184,122,.15);border-color:rgba(61,184,122,.3);color:var(--green)}
+#toast.twarn{background:rgba(224,85,85,.15);border-color:rgba(224,85,85,.3);color:#e08080}
+/* pw modal */
+#pwOv{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;align-items:center;justify-content:center;padding:24px}
+#pwOv.open{display:flex}
+.pwbox{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px 22px;width:100%;max-width:330px;text-align:center}
+.pwico{font-size:36px;margin-bottom:12px}
+.pwtitle{font-size:16px;font-weight:700;color:var(--gold2);margin-bottom:4px}
+.pwsub{font-size:11px;color:var(--muted);margin-bottom:18px;line-height:1.5}
+.pwinput{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:13px;color:var(--text);font-family:'DM Mono',monospace;font-size:18px;letter-spacing:4px;text-align:center;outline:none;margin-bottom:10px;transition:border-color .15s}
+.pwinput:focus{border-color:var(--gold)}
+.pwinput.shake{animation:shk .35s ease;border-color:var(--red)!important}
+.btnpw{width:100%;padding:13px;background:linear-gradient(135deg,var(--gold),#9a7830);border:none;border-radius:9px;color:#07070f;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px}
+.btnpwc{width:100%;padding:11px;background:transparent;border:1px solid var(--border);border-radius:9px;color:var(--muted);font-family:'Syne',sans-serif;font-size:13px;cursor:pointer}
+/* admin modal */
+#admOv{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;align-items:center;justify-content:center;padding:20px}
+#admOv.open{display:flex}
+#admModal{background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;animation:pin .25s ease}
+@keyframes pin{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.admhead{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1}
+.admtitle{font-size:15px;font-weight:700;color:var(--gold2)}
+.admsub{font-size:10px;color:var(--muted);margin-top:2px}
+.admclose{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px}
+.admbody{padding:18px 20px}
+.admsec{margin-bottom:18px}
+.admsttl{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+.admrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.admf label{font-size:10px;font-weight:600;color:var(--text2);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px}
+.admf .ipw input{padding-left:28px}
+.admnote{font-size:11px;color:var(--muted);line-height:1.6;padding:10px 12px;background:rgba(255,255,255,.02);border-radius:8px;border:1px solid var(--border);margin-bottom:12px}
+.admnote b{color:var(--text2);display:block;margin-bottom:3px}
+.btnadmsave{width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),#9a7830);border:none;border-radius:9px;color:#07070f;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;cursor:pointer}
+.admsaved{display:none;text-align:center;font-size:12px;color:var(--green);margin-top:8px;font-weight:600}
+.admsaved.show{display:block}
+.admhist{margin-top:8px}
+.admhrow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;font-family:'DM Mono',monospace;color:var(--text2)}
+.admhrow:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-icon" id="logoIcon">🍸</div>
+  <div>
+    <div class="topbar-title">Bar Daily Report · 酒吧日报</div>
+    <div class="topbar-sub">Manager Daily Submission · 经理每日数据上报</div>
+  </div>
+  <div class="topbar-right">
+    <div class="dot" id="netDot"></div>
+    <span id="netLbl" style="color:var(--muted)">...</span>
+  </div>
+</div>
+
+<div class="wrap">
+<div id="formSection">
+
+  <!-- LOCK BANNER -->
+  <div id="lockBanner">
+    <div class="ltop">
+      <div class="lic">🔒</div>
+      <div>
+        <div class="ltitle">Submitted & Locked · 已提交并锁定</div>
+        <div class="lsub"><span class="ldv" id="lockDate"></span> report is locked. Contact the owner for today's unlock code to modify.<br>该日期日报已锁定，如需修改请向老板索取今日动态解锁码。</div>
+      </div>
+    </div>
+    <div class="ulrow">
+      <input class="ulinput" id="ulInput" type="tel" maxlength="6" placeholder="— — — — — —">
+      <button class="btnul" id="btnUl" onclick="tryUnlock()">Unlock · 解锁</button>
+    </div>
+    <div class="ulhint">🔑 Daily dynamic code · 每日动态码，仅限当日有效</div>
+    <div class="rsnwrap" id="rsnWrap">
+      <div class="rsnlbl">Reason for modification · 修改原因 <span style="color:var(--red)">*</span></div>
+      <textarea class="rsnta" id="rsnTA" placeholder="Please explain the reason for this modification. This will be permanently recorded. · 请说明本次修改原因，将永久存档于管理员看板。"></textarea>
+      <button class="btncul" onclick="confirmUnlock()">Confirm & Unlock · 确认并解锁</button>
+    </div>
+  </div>
+
+  <!-- EDIT BANNER -->
+  <div id="editBanner"><span>🔓</span><span>Unlocked for editing · 已解锁 — Re-submit after changes · 修改后请重新提交</span></div>
+
+  <!-- RULES -->
+  <div class="rules">
+    <div class="rules-ttl">📋 Rules & Responsibilities · 经理权责说明</div>
+    <div class="rule"><div class="rn">1</div><div class="rb"><b>Submission Interval · 提交间隔</b>Each report must be submitted within 24 hours of the previous one. Late submission requires explanation.<i>每次提交须在上次提交后24小时内完成，逾期须向老板说明原因。</i></div></div>
+    <div class="rule"><div class="rn">2</div><div class="rb"><b>Variance Threshold · 差异阈值 ≤ 3%</b>Cash and inventory variances must not exceed 3%. Exceeding this triggers an automatic alert.<i>现金及库存差异不得超过3%，超出自动触发异常警报通知老板。</i></div></div>
+    <div class="rule"><div class="rn">3</div><div class="rb"><b>Purchase Receipt Required · 采购收据必须上传</b>A receipt photo is mandatory for every purchase entry. No receipt = cannot submit.<i>每笔采购必须上传收据照片，否则无法提交。</i></div></div>
+    <div class="rule"><div class="rn">4</div><div class="rb"><b>Data Integrity · 数据完整性</b>Once submitted, data is locked. Modification requires owner's daily unlock code and a written reason. All edits are permanently recorded.<i>数据提交后立即锁定，修改须输入老板当日动态码并填写书面原因，所有修改记录永久存档。</i></div></div>
+    <div class="rule"><div class="rn">5</div><div class="rb"><b>Manager's Commitment · 经理承诺</b>Submitting confirms all figures are accurate. The manager accepts full accountability. Repeated discrepancies or unauthorized edits may result in disciplinary action.<i>提交即确认数据真实准确，经理承担全部责任。反复异常或未授权修改将承担相应纪律处分。</i></div></div>
+  </div>
+
+  <!-- ERROR BANNER -->
+  <div id="errBanner"><b>⚠️ Please fix the following · 请检查以下问题</b><div id="errList"></div></div>
+
+  <!-- SETUP -->
+  <div class="sec" id="setupSec">
+    <div class="sec-ttl">⚙ Setup <span>· 初始设置（仅需一次 / One-time only）</span></div>
+    <div class="field">
+      <div class="flbl">Owner WhatsApp · 老板号码</div>
+      <div class="ipw"><span class="pfx" style="font-size:11px">🌍</span><input type="text" id="ownerPhone" placeholder="+263715174973"></div>
+      <div class="hint">For WhatsApp report sharing after submit · 提交后一键发送报告给老板，自动保存，下次不再显示</div>
+    </div>
+  </div>
+
+  <!-- DATE -->
+  <div class="sec">
+    <div class="sec-ttl">📅 Report Date <span>· 上报日期</span></div>
+    <div class="field">
+      <div class="flbl">Date · 日期 <span class="req">*</span></div>
+      <input type="date" id="reportDate" onchange="onDateChange(this.value)">
+      <div class="dchk" id="dchk"><div class="ms"></div><span>Checking · 检查中...</span></div>
+      <div class="iwarn" id="iwarn"></div>
+      <div class="iok" id="iok"></div>
+    </div>
+  </div>
+
+  <!-- OPENING BALANCE -->
+  <div class="sec">
+    <div class="sec-ttl">📂 Opening Balance <span>· 期初余额（昨日期末）</span></div>
+    <div id="openHint" class="hint" style="margin-bottom:10px;color:var(--gold)"></div>
+    <div class="row2">
+      <div class="field"><div class="flbl">Cash · 现金 <span class="req">*</span></div><div class="ipw"><span class="pfx">$</span><input type="number" id="prevCash" placeholder="0.00" step="0.01" min="0" inputmode="decimal"></div></div>
+      <div class="field"><div class="flbl">Inventory · 库存 <span class="req">*</span></div><div class="ipw"><span class="pfx">$</span><input type="number" id="prevInventory" placeholder="0.00" step="0.01" min="0" inputmode="decimal"></div></div>
+    </div>
+  </div>
+
+  <!-- TODAY OPS -->
+  <div class="sec">
+    <div class="sec-ttl">📊 Today's Operations <span>· 今日经营</span></div>
+    <div class="field"><div class="flbl">Total Sales · 总销售额 <span class="req">*</span></div><div class="ipw"><span class="pfx">$</span><input type="number" id="sales" placeholder="0.00" step="0.01" min="0" inputmode="decimal"></div></div>
+    <div class="field"><div class="flbl">Purchases · 采购补货 <span class="req">*</span></div><div class="ipw"><span class="pfx">$</span><input type="number" id="purchase" placeholder="0.00" step="0.01" min="0" inputmode="decimal"></div></div>
+    <div class="psec">
+      <div class="plbl">🧾 Purchase Receipt · 采购收据 <span class="reqb">REQUIRED · 必须上传</span></div>
+      <label class="pbtn" id="ppBtn">📷 Photograph receipt · 拍摄采购收据<input type="file" accept="image/*" multiple onchange="addPhotos(this,'purchase')"></label>
+      <div class="pgrid" id="purchaseGrid"></div>
+      <div class="pcnt" id="purchaseCount"></div>
+      <div class="hint">Required when purchase amount > 0 · 采购金额大于0时必须上传收据照片</div>
+    </div>
+  </div>
+
+  <!-- ACTUAL COUNT -->
+  <div class="sec">
+    <div class="sec-ttl">✍ Actual Count <span>· 管理员实盘</span></div>
+    <div class="row2">
+      <div class="field"><div class="flbl">Cash Now · 现金 <span class="req">*</span></div><div class="ipw"><span class="pfx">$</span><input type="number" id="actualCash" placeholder="0.00" step="0.01" min="0" inputmode="decimal"></div></div>
+      <div class="field"><div class="flbl">Inventory · 库存 <span class="req">*</span></div><div class="ipw"><span class="pfx">$</span><input type="number" id="actualInventory" placeholder="0.00" step="0.01" min="0" inputmode="decimal"></div></div>
+    </div>
+    <div class="field"><div class="flbl">Total Value Reported · 上报总价值 <span class="req">*</span></div><div class="ipw"><span class="pfx">$</span><input type="number" id="reportedTotal" placeholder="0.00" step="0.01" min="0" inputmode="decimal"></div></div>
+    <div class="psec">
+      <div class="plbl">📸 Inventory Photo · 库存照片 <span class="opt">Optional · 可选</span></div>
+      <label class="pbtn">📷 Photograph inventory · 拍摄库存<input type="file" accept="image/*" multiple onchange="addPhotos(this,'inventory')"></label>
+      <div class="pgrid" id="inventoryGrid"></div>
+      <div class="pcnt" id="inventoryCount"></div>
+    </div>
+  </div>
+
+  <!-- CONFIRM -->
+  <div class="cfm" id="cfmWrap" onclick="toggleConfirm()">
+    <div class="cb" id="cbBox"></div>
+    <div class="cfmtxt">
+      <b>I confirm all data is accurate · 本人确认以上所有数据真实、完整、准确</b>
+      By checking this box, I accept full personal responsibility for the accuracy of this report and understand that falsification may result in disciplinary action.<br>
+      勾选即表示本人对本报告数据的准确性承担全部个人责任，并了解数据造假将承担相应处分。
+    </div>
+  </div>
+
+  <button id="submitBtn" onclick="submitReport()">
+    <div class="bspin" id="bspin"></div>
+    <span id="btnTxt">📤 Submit & Sync · 提交并同步云端</span>
+  </button>
+
+</div><!-- /formSection -->
+
+<!-- RESULTS -->
+<div id="results">
+  <div class="rh"><div class="rtitle" id="rDate"></div><div class="rsub">Report Submitted · 日报已提交</div></div>
+  <div class="syncs" id="syncSt"></div>
+  <div class="sgrid">
+    <div class="sbox"><div class="slbl">Sales · 销售额</div><div class="sval" id="rSales"></div></div>
+    <div class="sbox"><div class="slbl">Purchase · 采购</div><div class="sval" id="rPurchase"></div></div>
+    <div class="sbox"><div class="slbl">Cash · 现金</div><div class="sval" id="rCash"></div></div>
+    <div class="sbox"><div class="slbl">Total · 总价值</div><div class="sval" id="rTotal"></div></div>
+  </div>
+  <div class="rcard" id="cashCard">
+    <div class="rchead"><div class="rctitle">💵 Cash · 现金核验</div><div class="bdg" id="cashBdg"></div></div>
+    <div class="rrow"><div class="rl">Opening · 期初</div><div class="rv g" id="r_pc"></div></div>
+    <div class="rrow"><div class="rl">+ Sales · 销售</div><div class="rv g" id="r_s"></div></div>
+    <div class="rrow"><div class="rl">− Purchase · 采购</div><div class="rv g" id="r_p"></div></div>
+    <div class="rrow"><div class="rl">Expected · 理论</div><div class="rv g" id="r_tc"></div></div>
+    <div class="rrow"><div class="rl">Actual · 实盘</div><div class="rv g" id="r_ac"></div></div>
+    <div class="rrow"><div class="rl">Gap · 差额</div><div class="rv" id="r_cd"></div></div>
+  </div>
+  <div class="rcard" id="invCard">
+    <div class="rchead"><div class="rctitle">📦 Inventory · 库存核验</div><div class="bdg" id="invBdg"></div></div>
+    <div class="rrow"><div class="rl">Opening · 期初</div><div class="rv g" id="r_pi"></div></div>
+    <div class="rrow"><div class="rl">+ Purchase · 采购</div><div class="rv g" id="r_p2"></div></div>
+    <div class="rrow"><div class="rl">− Cost Est.40% · 估算成本</div><div class="rv g" id="r_ce"></div></div>
+    <div class="rrow"><div class="rl">Expected · 理论</div><div class="rv g" id="r_ti"></div></div>
+    <div class="rrow"><div class="rl">Actual · 实盘</div><div class="rv g" id="r_ai"></div></div>
+    <div class="rrow"><div class="rl">Gap · 差额</div><div class="rv" id="r_id"></div></div>
+  </div>
+  <div id="alertBox"></div>
+  <div id="resultPhotos"></div>
+  <div class="sharerow">
+    <button class="bsh bwa" id="btnWa" onclick="sendWA()">📱 Send to Owner · 发送给老板 (WhatsApp)</button>
+    <button class="bsh" onclick="copyReport()">📋 Copy Report · 复制报告文本</button>
+    <button class="bsh breset" onclick="resetForm()">↩ New Entry · 重新填写</button>
+  </div>
+</div>
+</div>
+
+<!-- PASSWORD MODAL -->
+<div id="pwOv">
+  <div class="pwbox">
+    <div class="pwico">🔐</div>
+    <div class="pwtitle">Admin Access · 管理员入口</div>
+    <div class="pwsub">Enter owner password to access opening balance settings.<br>输入老板密码进入期初数据设置</div>
+    <input class="pwinput" id="pwInp" type="password" placeholder="••••••••••" onkeydown="if(event.key==='Enter')checkPw()">
+    <button class="btnpw" onclick="checkPw()">Enter · 进入</button>
+    <button class="btnpwc" onclick="closePw()">Cancel · 取消</button>
+  </div>
+</div>
+
+<!-- ADMIN MODAL -->
+<div id="admOv">
+  <div id="admModal">
+    <div class="admhead">
+      <div><div class="admtitle">⚙️ Opening Balance · 期初数据设置</div><div class="admsub">Owner Access Only · 仅限老板操作</div></div>
+      <button class="admclose" onclick="closeAdm()">✕</button>
+    </div>
+    <div class="admbody">
+      <div class="admnote"><b>📌 What is Opening Balance? · 什么是期初数据？</b>The starting cash and inventory value before operations begin. Set once before the first daily report — managers carry these figures forward automatically.<br><br>营业开始时的现金和库存初始值。仅需在第一份日报前设定一次，经理每日数据将基于此自动延续。</div>
+      <div class="admsec">
+        <div class="admsttl">Opening Figures · 期初数值</div>
+        <div class="admrow">
+          <div class="admf"><label>Opening Cash · 期初现金</label><div class="ipw"><span class="pfx">$</span><input type="number" id="admCash" placeholder="0.00" step="0.01" min="0" inputmode="decimal"></div></div>
+          <div class="admf"><label>Opening Inventory · 期初库存</label><div class="ipw"><span class="pfx">$</span><input type="number" id="admInv" placeholder="0.00" step="0.01" min="0" inputmode="decimal"></div></div>
+        </div>
+        <div class="admf" style="margin-bottom:12px"><label>Effective Date · 生效日期</label><div class="ipw"><input type="date" id="admDate" style="padding-left:12px"></div></div>
+        <div class="admnote"><b>⚠️ Note · 注意</b>Saving overwrites the previous opening balance and affects all future report calculations.<br>保存将覆盖原有期初数据，影响此后所有日报计算。</div>
+        <button class="btnadmsave" onclick="saveOpening()">💾 Save & Sync · 保存并同步云端</button>
+        <div class="admsaved" id="admSaved">✅ Saved · 保存成功</div>
+      </div>
+      <div class="admsec">
+        <div class="admsttl">History · 历史期初记录</div>
+        <div id="admHist" class="admhist"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SUPA_URL='https://ywugmtllsnildaqivhkv.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3dWdtdGxsc25pbGRhcWl2aGt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNzUyMDAsImV4cCI6MjA4ODc1MTIwMH0.3N6ECT6KlFYw5qzrGkT6JetqEWRr8VVZ3W23Z1USH0I';
+const COST=0.40, THRESH=0.03, USECRET='987923', ADMINPW='sqx1987923';
+
+// ── INIT ──
+document.getElementById('reportDate').valueAsDate=new Date();
+const sp=localStorage.getItem('ownerPhone')||'+263715174973';
+document.getElementById('ownerPhone').value=sp;
+if(localStorage.getItem('ownerPhone'))document.getElementById('setupSec').style.display='none';
+document.getElementById('ownerPhone').addEventListener('input',function(){localStorage.setItem('ownerPhone',this.value.trim())});
+
+function checkNet(){const d=document.getElementById('netDot'),l=document.getElementById('netLbl');if(navigator.onLine){d.className='dot on';l.textContent='Online · 在线';l.style.color='var(--green)'}else{d.className='dot';l.textContent='Offline · 离线';l.style.color='var(--red)'}}
+checkNet();window.addEventListener('online',checkNet);window.addEventListener('offline',checkNet);
+
+// ── 10-TAP LOGO ──
+let taps=0,tapT;
+document.getElementById('logoIcon').addEventListener('click',function(){
+  taps++;clearTimeout(tapT);tapT=setTimeout(()=>taps=0,2000);
+  if(taps>=10){taps=0;openPw();}
+});
+
+// ── PASSWORD ──
+function openPw(){document.getElementById('pwOv').classList.add('open');document.getElementById('pwInp').value='';setTimeout(()=>document.getElementById('pwInp').focus(),200)}
+function closePw(){document.getElementById('pwOv').classList.remove('open')}
+function checkPw(){
+  if(document.getElementById('pwInp').value===ADMINPW){closePw();openAdm();}
+  else{const i=document.getElementById('pwInp');i.classList.add('shake');i.value='';setTimeout(()=>i.classList.remove('shake'),400);toast('❌ Incorrect password · 密码错误','warn')}
+}
+
+// ── ADMIN ──
+async function openAdm(){document.getElementById('admOv').classList.add('open');document.getElementById('admDate').valueAsDate=new Date();document.getElementById('admSaved').classList.remove('show');await loadOpening()}
+function closeAdm(){document.getElementById('admOv').classList.remove('open')}
+
+async function loadOpening(){
+  const d=document.getElementById('admHist');d.innerHTML='<div style="color:var(--muted);font-size:11px">Loading · 加载中...</div>';
+  try{
+    const r=await fetch(SUPA_URL+'/rest/v1/opening_balance?select=*&order=created_at.desc&limit=5',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    const rows=await r.json();
+    if(!rows.length){d.innerHTML='<div style="color:var(--muted);font-size:11px">No records yet · 暂无期初记录</div>';return}
+    const l=rows[0];
+    document.getElementById('admCash').value=l.cash||0;
+    document.getElementById('admInv').value=l.inventory||0;
+    d.innerHTML=rows.map(r=>`<div class="admhrow"><span>${r.effective_date||r.created_at?.slice(0,10)||'—'}</span><span>Cash $${(r.cash||0).toFixed(2)}</span><span>Inv $${(r.inventory||0).toFixed(2)}</span></div>`).join('');
+  }catch(e){d.innerHTML='<div style="color:var(--muted);font-size:11px">Load failed · 加载失败（请检查数据库是否含opening_balance表）</div>'}
+}
+
+async function saveOpening(){
+  const cash=parseFloat(document.getElementById('admCash').value)||0;
+  const inv=parseFloat(document.getElementById('admInv').value)||0;
+  const date=document.getElementById('admDate').value||new Date().toISOString().slice(0,10);
+  try{
+    const r=await fetch(SUPA_URL+'/rest/v1/opening_balance',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({cash,inventory:inv,effective_date:date,created_at:new Date().toISOString()})});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    document.getElementById('admSaved').classList.add('show');
+    toast('✅ Opening balance saved · 期初数据已保存','ok');
+    await loadOpening();
+  }catch(e){toast('❌ Save failed · 保存失败 — '+e.message,'warn')}
+}
+
+// ── DATE CHANGE ──
+async function onDateChange(v){
+  if(!v)return;
+  document.getElementById('dchk').classList.add('show');
+  document.getElementById('iwarn').classList.remove('show');
+  document.getElementById('iok').classList.remove('show');
+  try{
+    const [r1,r2]=await Promise.all([
+      fetch(SUPA_URL+'/rest/v1/daily_reports?select=date,full_data&date=eq.'+v,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}),
+      fetch(SUPA_URL+'/rest/v1/daily_reports?select=date&order=date.desc&limit=2',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
+    ]);
+    const rows1=await r1.json(), rows2=await r2.json();
+    document.getElementById('dchk').classList.remove('show');
+
+    // Interval check — compare against most recent date that isn't this date
+    const others=rows2.filter(r=>r.date!==v);
+    if(others.length){
+      const last=others[0].date;
+      const diff=(new Date(v+'T12:00:00')-new Date(last+'T12:00:00'))/3600000;
+      if(diff>24&&!rows1.length){
+        document.getElementById('iwarn').textContent='⚠️ Last report: '+last+' — Gap: '+Math.round(diff)+'h (exceeds 24h limit · 超过24小时规定). Please explain to owner · 请向老板说明原因。';
+        document.getElementById('iwarn').classList.add('show');
+      }else if(!rows1.length){
+        document.getElementById('iok').textContent='✅ Interval OK · 间隔正常 — Last: '+last+' ('+Math.round(diff)+'h ago · 小时前)';
+        document.getElementById('iok').classList.add('show');
+      }
+    }
+
+    const fs=document.getElementById('formSection');
+    if(rows1.length){
+      window._origData=rows1[0].full_data||{};
+      fs.classList.add('form-locked');
+      document.getElementById('lockBanner').style.display='block';
+      document.getElementById('lockDate').textContent=v;
+    }else{
+      fs.classList.remove('form-locked');
+      document.getElementById('lockBanner').style.display='none';
+      window._unlocked=false;window._editReason='';
+      document.getElementById('editBanner').classList.remove('show');
+      document.getElementById('rsnWrap').classList.remove('show');
+      document.getElementById('btnUl').style.display='';
+      document.getElementById('ulInput').disabled=false;
+    }
+    autoFillOpening(v);
+  }catch(e){document.getElementById('dchk').classList.remove('show')}
+}
+
+async function autoFillOpening(v){
+  try{
+    const prev=new Date(v+'T12:00:00');prev.setDate(prev.getDate()-1);
+    const ps=prev.toISOString().slice(0,10);
+    const r=await fetch(SUPA_URL+'/rest/v1/daily_reports?select=full_data&date=eq.'+ps,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    const rows=await r.json();
+    if(rows.length&&rows[0].full_data){
+      const fd=rows[0].full_data;
+      document.getElementById('prevCash').value=fd.actualCash||'';
+      document.getElementById('prevInventory').value=fd.actualInv||'';
+      document.getElementById('openHint').textContent='✅ Auto-filled from '+ps+' · 已从'+ps+'实盘自动填入';
+      return;
+    }
+    // fall back to opening_balance
+    const r2=await fetch(SUPA_URL+'/rest/v1/opening_balance?select=*&order=created_at.desc&limit=1',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    const ob=await r2.json();
+    if(ob.length){
+      document.getElementById('prevCash').value=ob[0].cash||'';
+      document.getElementById('prevInventory').value=ob[0].inventory||'';
+      document.getElementById('openHint').textContent='📌 Filled from opening balance ('+ob[0].effective_date+') · 已从期初数据填入';
+    }else{document.getElementById('openHint').textContent=''}
+  }catch(e){document.getElementById('openHint').textContent=''}
+}
+
+onDateChange(document.getElementById('reportDate').value);
+
+// ── PHOTOS ──
+const photos={purchase:[],inventory:[]};
+function compress(file){return new Promise(r=>{const rd=new FileReader();rd.onload=e=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height,M=800;if(w>M||h>M){const x=Math.min(M/w,M/h);w=Math.round(w*x);h=Math.round(h*x)}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);r(c.toDataURL('image/jpeg',.6))};img.onerror=()=>r(null);img.src=e.target.result};rd.onerror=()=>r(null);rd.readAsDataURL(file)})}
+async function addPhotos(inp,type){const arr=photos[type],slots=5-arr.length;if(slots<=0){toast('Max 5 photos · 最多5张','warn');return}for(const f of Array.from(inp.files).slice(0,slots)){const b=await compress(f);if(b)arr.push({data:b,name:f.name})}inp.value='';renderPhotos(type);if(type==='purchase')document.getElementById('ppBtn').classList.remove('err')}
+function renderPhotos(type){const g=document.getElementById(type+'Grid'),c=document.getElementById(type+'Count'),arr=photos[type];g.innerHTML=arr.map((p,i)=>`<div class="pthumb"><img src="${p.data}" loading="lazy"><button class="pdel" onclick="rmPhoto('${type}',${i})">✕</button></div>`).join('');c.textContent=arr.length?arr.length+'/5 uploaded · 已上传':''}
+function rmPhoto(type,i){photos[type].splice(i,1);renderPhotos(type)}
+
+// ── CONFIRM ──
+let confirmed=false;
+function toggleConfirm(){confirmed=!confirmed;document.getElementById('cbBox').className='cb'+(confirmed?' on':'');document.getElementById('cfmWrap').classList.remove('err')}
+
+// ── UNLOCK ──
+function genCode(date){const s=USECRET+date;let h=5381;for(let i=0;i<s.length;i++){h=((h<<5)+h)^s.charCodeAt(i);h=h&0x7fffffff}return String(h%1000000).padStart(6,'0')}
+
+function tryUnlock(){
+  const inp=document.getElementById('ulInput'),v=document.getElementById('reportDate').value;
+  if(inp.value.trim()===genCode(v)){
+    document.getElementById('rsnWrap').classList.add('show');
+    document.getElementById('rsnTA').focus();
+    document.getElementById('btnUl').style.display='none';
+    inp.disabled=true;
+    toast('✅ Code correct · 验证码正确 — Enter reason · 请填写修改原因','ok');
+  }else{
+    inp.classList.add('shake');inp.value='';
+    setTimeout(()=>inp.classList.remove('shake'),400);
+    toast('❌ Incorrect code · 动态码错误','warn');
+  }
+}
+
+function confirmUnlock(){
+  const rsn=document.getElementById('rsnTA').value.trim();
+  if(!rsn){document.getElementById('rsnTA').classList.add('err');toast('❌ Reason required · 必须填写修改原因','warn');return}
+  document.getElementById('rsnTA').classList.remove('err');
+  window._editReason=rsn;window._unlocked=true;
+  document.getElementById('formSection').classList.remove('form-locked');
+  document.getElementById('lockBanner').style.display='none';
+  document.getElementById('editBanner').classList.add('show');
+  confirmed=false;document.getElementById('cbBox').className='cb';
+  toast('🔓 Unlocked · 已解锁，修改后请重新提交','ok');
+}
+
+// ── VALIDATE ──
+function gn(id){return parseFloat(document.getElementById(id).value)||0}
+function gv(id){return document.getElementById(id).value.trim()}
+
+function validate(){
+  const errs=[];
+  [['reportDate','Date required · 日期未选择'],['prevCash','Opening cash required · 期初现金未填写'],['prevInventory','Opening inventory required · 期初库存未填写'],['sales','Sales required · 销售额未填写'],['purchase','Purchase required · 采购金额未填写'],['actualCash','Actual cash required · 实盘现金未填写'],['actualInventory','Actual inventory required · 实盘库存未填写'],['reportedTotal','Reported total required · 上报总价值未填写']].forEach(([id,msg])=>{const el=document.getElementById(id);el.classList.remove('err');if(!el.value.trim()){el.classList.add('err');errs.push(msg)}});
+  if(gn('purchase')>0&&photos.purchase.length===0){document.getElementById('ppBtn').classList.add('err');errs.push('Purchase receipt photo required · 有采购必须上传收据照片')}
+  if(!confirmed){document.getElementById('cfmWrap').classList.add('err');errs.push('Please confirm data accuracy · 请勾选确认数据真实准确')}
+  return errs;
+}
+
+// ── SUPABASE ──
+async function syncDB(payload){
+  const pref=window._unlocked?'resolution=merge-duplicates,return=minimal':'return=minimal';
+  const r=await fetch(SUPA_URL+'/rest/v1/daily_reports',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':pref},body:JSON.stringify(payload)});
+  if(!r.ok){const e=await r.text();if(r.status===409||e.includes('23505')||e.includes('duplicate'))throw new Error('DUP');throw new Error('HTTP '+r.status)}
+  return true;
+}
+
+// ── SUBMIT ──
+async function submitReport(){
+  const errs=validate();
+  if(errs.length){document.getElementById('errList').innerHTML=errs.map(e=>'• '+e).join('<br>');document.getElementById('errBanner').style.display='block';document.getElementById('errBanner').scrollIntoView({behavior:'smooth',block:'center'});return}
+  document.getElementById('errBanner').style.display='none';
+
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true;document.getElementById('btnTxt').style.display='none';document.getElementById('bspin').style.display='block';
+
+  const dv=gv('reportDate'),pc=gn('prevCash'),pi=gn('prevInventory'),sa=gn('sales'),pu=gn('purchase'),ac=gn('actualCash'),ai=gn('actualInventory'),rt=gn('reportedTotal');
+  const sce=sa*COST,tc=pc+sa-pu,ti=pi+pu-sce,tt=tc+ti;
+  const cd=ac-tc,cdr=tc!==0?Math.abs(cd)/Math.abs(tc):0;
+  const id=ai-ti,idr=ti!==0?Math.abs(id)/Math.abs(ti):0;
+  const td=rt-tt,co=cdr<=THRESH,io=idr<=THRESH,to=Math.abs(td)<0.05;
+
+  const alerts=[];
+  if(!co)alerts.push('Cash variance '+pct(cdr)+' exceeds 3% · 现金差异'+pct(cdr)+'超过3% — Expected '+fmt(tc)+' vs Actual '+fmt(ac));
+  if(!io)alerts.push('Inventory variance '+pct(idr)+' exceeds 3% · 库存差异'+pct(idr)+'超过3% — Expected '+fmt(ti)+' vs Actual '+fmt(ai));
+  if(!to)alerts.push('Total value mismatch · 总价值不符，差额 '+fmtS(td));
+
+  const d=new Date(dv+'T12:00:00');
+  const ds=d.toLocaleDateString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit'});
+
+  let editHistory=undefined;
+  if(window._unlocked&&window._origData){
+    const o=window._origData,changes=[];
+    [['sales','Sales · 销售额',sa],['purchase','Purchase · 采购',pu],['actualCash','Cash · 现金',ac],['actualInv','Inventory · 库存',ai],['reportedTotal','Total · 总值',rt]].forEach(([k,lbl,nv])=>{const ov=parseFloat(o[k])||0;if(Math.abs(ov-nv)>0.001)changes.push({field:lbl,before:ov,after:nv})});
+    editHistory=[{editedAt:new Date().toISOString(),reason:window._editReason,originalSubmittedAt:o.submittedAt,changes}];
+  }
+
+  const rd={date:dv,dateStr:ds,prevCash:pc,prevInv:pi,sales:sa,purchase:pu,salesCostEst:sce,theoCash:tc,theoInv:ti,theoTotal:tt,actualCash:ac,actualInv:ai,reportedTotal:rt,cashDiff:cd,cashDiffRate:cdr,invDiff:id,invDiffRate:idr,totalDiff:td,cashOk:co,invOk:io,totalOk:to,alerts,allOk:alerts.length===0,isEdited:window._unlocked||false,editHistory,submittedAt:new Date().toISOString(),managerConfirmed:true};
+
+  try{localStorage.setItem('report_'+dv,JSON.stringify(rd))}catch(e){}
+
+  let syncOk=false,syncMsg='';
+  const hp=photos.purchase.length>0||photos.inventory.length>0;
+  try{
+    await syncDB({date:dv,sales:sa,purchase:pu,all_ok:alerts.length===0,full_data:rd,photos:hp?{purchase:photos.purchase,inventory:photos.inventory}:{}});
+    syncOk=true;syncMsg='☁️ Synced to cloud · 已同步至云端'+(hp?' (with photos · 含照片)':'');
+  }catch(e){
+    if(e.message==='DUP'&&!window._unlocked){
+      btn.disabled=false;document.getElementById('btnTxt').style.display='';document.getElementById('bspin').style.display='none';
+      document.getElementById('formSection').classList.add('form-locked');
+      document.getElementById('lockBanner').style.display='block';
+      document.getElementById('lockDate').textContent=dv;
+      toast('🔒 Already submitted · 该日期已提交锁定','warn');return;
+    }
+    syncMsg='📱 Saved locally · 已本地保存 — Cloud sync failed · 云端同步失败';
+  }
+
+  btn.disabled=false;document.getElementById('btnTxt').style.display='';document.getElementById('bspin').style.display='none';
+  document.getElementById('formSection').classList.add('form-locked');
+  if(document.getElementById('ownerPhone').value.trim()){localStorage.setItem('ownerPhone',document.getElementById('ownerPhone').value.trim());document.getElementById('setupSec').style.display='none'}
+
+  window._rpt=rd;window._rptTxt=buildTxt(rd);
+  showResults(rd,ds,sa,pu,ac,ai,rt,pc,pi,sce,tc,ti,cd,id,cdr,idr,co,io,to,alerts,syncMsg,syncOk);
+}
+
+// ── RESULTS ──
+function showResults(rd,ds,sa,pu,ac,ai,rt,pc,pi,sce,tc,ti,cd,id,cdr,idr,co,io,to,alerts,syncMsg,syncOk){
+  document.getElementById('formSection').style.display='none';
+  document.getElementById('results').style.display='block';
+  document.getElementById('rDate').textContent=ds;
+  document.getElementById('rSales').textContent=fmt(sa);
+  document.getElementById('rPurchase').textContent=fmt(pu);
+  document.getElementById('rCash').textContent=fmt(ac);
+  document.getElementById('rTotal').textContent=fmt(rt);
+  document.getElementById('syncSt').innerHTML='<span>'+(syncOk?'✅':'📱')+'</span><span>'+syncMsg+'</span>';
+  document.getElementById('r_pc').textContent=fmt(pc);
+  document.getElementById('r_s').textContent='+'+fmt(sa);
+  document.getElementById('r_p').textContent='−'+fmt(pu);
+  document.getElementById('r_tc').textContent=fmt(tc);
+  document.getElementById('r_ac').textContent=fmt(ac);
+  const ce=document.getElementById('r_cd');ce.textContent=fmtS(cd);ce.className='rv '+(co?'ok':'warn');
+  document.getElementById('cashCard').className='rcard '+(co?'ok':'warn');
+  document.getElementById('cashBdg').textContent=co?'✅ OK':'⚠️ >3%';
+  document.getElementById('cashBdg').className='bdg '+(co?'ok':'warn');
+  document.getElementById('r_pi').textContent=fmt(pi);
+  document.getElementById('r_p2').textContent='+'+fmt(pu);
+  document.getElementById('r_ce').textContent='−'+fmt(sce);
+  document.getElementById('r_ti').textContent=fmt(ti);
+  document.getElementById('r_ai').textContent=fmt(ai);
+  const ie=document.getElementById('r_id');ie.textContent=fmtS(id);ie.className='rv '+(io?'ok':'warn');
+  document.getElementById('invCard').className='rcard '+(io?'ok':'warn');
+  document.getElementById('invBdg').textContent=io?'✅ OK':'⚠️ >3%';
+  document.getElementById('invBdg').className='bdg '+(io?'ok':'warn');
+  const ab=document.getElementById('alertBox');
+  ab.innerHTML=alerts.length?`<div class="issuebox"><div class="isstitle">⚠️ ${alerts.length} issue(s) · 发现${alerts.length}项异常</div>${alerts.map(a=>`<div class="issitem">${a}</div>`).join('')}</div>`:'<div class="okbox">✅ All checks passed · 全部核验通过<br><span style="font-size:11px;font-weight:400">No discrepancies found · 今日数据无异常</span></div>';
+  const rp=document.getElementById('resultPhotos');let ph='';
+  if(photos.purchase.length)ph+=`<div class="rcard"><div class="rctitle" style="margin-bottom:8px">🧾 Purchase Receipts · 采购收据</div><div class="rpgrid">${photos.purchase.map(p=>`<img src="${p.data}">`).join('')}</div></div>`;
+  if(photos.inventory.length)ph+=`<div class="rcard"><div class="rctitle" style="margin-bottom:8px">📦 Inventory Photos · 库存照片</div><div class="rpgrid">${photos.inventory.map(p=>`<img src="${p.data}">`).join('')}</div></div>`;
+  rp.innerHTML=ph;
+  const ph2=(localStorage.getItem('ownerPhone')||'').replace(/\D/g,'');
+  document.getElementById('btnWa').innerHTML=ph2?'📱 Send to '+ph2+' · 发送给老板':'📱 Send via WhatsApp · 发送报告';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── HELPERS ──
+function fmt(n){return'$'+Math.abs(n||0).toFixed(2)}
+function fmtS(n){return(n>=0?'+$':'-$')+Math.abs(n||0).toFixed(2)}
+function pct(n){return(n*100).toFixed(1)+'%'}
+
+function buildTxt(d){return`📊 Bar Daily Report · 酒吧日报 ${d.dateStr}\n${d.allOk?'✅ All Clear · 全部正常':'⚠️ '+d.alerts.length+' issue(s) · 项异常'}${d.isEdited?'\n✏️ EDITED · 已修改'+(d.editHistory?.[0]?.reason?' — '+d.editHistory[0].reason:''):''}\n\n[Cash · 现金] ${d.cashOk?'✅':'❌'} ${fmtS(d.cashDiff)} (${pct(d.cashDiffRate)})\n[Inventory · 库存] ${d.invOk?'✅':'❌'} ${fmtS(d.invDiff)} (${pct(d.invDiffRate)})\nSales · 销售: ${fmt(d.sales)} | Purchase · 采购: ${fmt(d.purchase)}\nCash · 现金: ${fmt(d.actualCash)} | Inv · 库存: ${fmt(d.actualInv)}\nTotal · 总值: ${fmt(d.reportedTotal)}\n${d.alerts.length?'\nIssues · 异常:\n'+d.alerts.map(a=>'• '+a).join('\n'):''}\nSubmitted · 提交: ${new Date(d.submittedAt).toLocaleString('zh-CN')}`}
+
+function sendWA(){if(!window._rptTxt)return;const p=(localStorage.getItem('ownerPhone')||'').replace(/\D/g,'');window.open((p?'https://wa.me/'+p+'?text=':'https://wa.me/?text=')+encodeURIComponent(window._rptTxt),'_blank')}
+
+function copyReport(){if(!window._rptTxt)return;if(navigator.clipboard){navigator.clipboard.writeText(window._rptTxt).then(()=>toast('✅ Copied · 已复制','ok'))}else{const ta=document.createElement('textarea');ta.value=window._rptTxt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✅ Copied · 已复制','ok')}}
+
+function resetForm(){
+  document.getElementById('formSection').style.display='block';
+  document.getElementById('results').style.display='none';
+  document.getElementById('errBanner').style.display='none';
+  document.getElementById('lockBanner').style.display='none';
+  document.getElementById('formSection').classList.remove('form-locked');
+  document.getElementById('editBanner').classList.remove('show');
+  document.getElementById('rsnWrap').classList.remove('show');
+  document.getElementById('ulInput').disabled=false;document.getElementById('btnUl').style.display='';
+  document.getElementById('rsnTA').value='';
+  document.getElementById('reportDate').valueAsDate=new Date();
+  ['prevCash','prevInventory','sales','purchase','actualCash','actualInventory','reportedTotal'].forEach(id=>{document.getElementById(id).value='';document.getElementById(id).classList.remove('err')});
+  photos.purchase=[];photos.inventory=[];renderPhotos('purchase');renderPhotos('inventory');
+  confirmed=false;document.getElementById('cbBox').className='cb';
+  window._unlocked=false;window._editReason='';
+  if(localStorage.getItem('ownerPhone'))document.getElementById('setupSec').style.display='none';
+  onDateChange(document.getElementById('reportDate').value);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function toast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className=type==='ok'?'show tok':type==='warn'?'show twarn':'show';clearTimeout(window._tt);window._tt=setTimeout(()=>t.className='',3200)}
+</script>
+</body>
+</html>
